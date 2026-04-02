@@ -73,8 +73,8 @@
 <label>管材補正係数 k2</label>
 <select id="k2">
     <option value="0.8">SUS / 塩ビ / SGP新</option>
-    <option value="1">鋳鉄</option>
-    <option value="2">鋳ふ（代表値）</option>
+    <option value="1">錆</option>
+    <option value="2">錆こぶ（代表値）</option>
 </select>
 
 <label>直管長さ L（m）</label>
@@ -165,10 +165,7 @@ document.getElementById("calc").onclick = () => {
         <b>配管抵抗 Hf1：${Hf1.toFixed(2)} m</b><br>
         <b>全揚程 H：${H.toFixed(2)} m</b><br><br>
 
-        <b>使用係数（濃度 ${C}%）</b><br>
-        k3（エルボ）：Dx${k3}<br>
-        k4（パルプ）：${k4}<br>
-        k5（その他）：${k5}
+       
     `;
 };
 </script>
