@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>パルプヘッド計算（グルーズの公式）</title>
+<style>
+    body {
+        font-family: sans-serif;
+        margin: 20px;
+        max-width: 600px;
+    }
+    h1 {
+        font-size: 22px;
+        margin-bottom: 10px;
+    }
+    label {
+        font-weight: bold;
+        margin-top: 12px;
+        display: block;
+    }
+    input, select {
+        width: 100%;
+        padding: 6px;
+        margin-top: 4px;
+        font-size: 16px;
+    }
+    button {
+        margin-top: 20px;
+        padding: 10px;
+        width: 100%;
+        font-size: 18px;
+        background: #0078d4;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+    button:hover {
+        background: #005fa3;
+    }
+    .result {
+        margin-top: 25px;
+        padding: 15px;
+        background: #f0f8ff;
+        border-left: 4px solid #0078d4;
+    }
+</style>
+</head>
+<body>
+
+<h1>パルプヘッド計算（グルーズの公式）</h1>
+
+<label>パルプ種類（k1）</label>
+<select id="k1">
+    <option value="1.0">LBKP</option>
+    <option value="1.1">NBKP</option>
+    <option value="1.1">LUKP</option>
+    <option value="1.25">NUKP</option>
+    <option value="0.9">GP</option>
+    <option value="1.4">RGP</option>
+    <option value="1.4">TMP</option>
+    <option value="1.3">DIP</option>
+</select>
+
+<label>濃度 C（％）</label>
+<input id="C" type="number" step="0.1" value="3">
+
+<label>流量 Q（m³/min）</label>
+<input id="Q" type="number" step="0.001" value="0.384">
+
+<label>配管口径 D（mm）</label>
+<input id="D" type="number" value="80">
+
+<label>管材補正係数 k2</label>
+<select id="k2">
+    <option value="0.8">SUS / 塩ビ / SGP新</option>
+    <option value="1">鋳鉄</option>
+    <option value="2">鋳ふ（代表値）</option>
+</select>
+
+<label>直管長さ L（m）</label>
+<input id="L" type="number" value="15">
+
+<label>エルボ数 L1（個）</label>
+<input id="L1" type="number" value="4">
+
+<label>バルブ数 B（個）</label>
+<input id="B" type="number" value="2">
+
+<label>その他 T（個）</label>
+<input id="T" type="number" value="1">
+
+<label>実揚程 Ha（m）</label>
+<input id="Ha" type="number" value="12">
+
+<label>押込圧力 ΔP（m）</label>
+<input id="dP" type="number" value="0">
+
+<button id="calc">計算する</button>
+
+<div class="result" id="result"></div>
+
+<script>
+document.getElementById("calc").onclick = () => {
+
+    const C = parseFloat(document.getElementById("C").value);
+    const Q = parseFloat(document.getElementById("Q").value);
+    const D = parseFloat(document.getElementById("D").value);
+    const k1 = parseFloat(document.getElementById("k1").value);
+    const k2 = parseFloat(document.getElementById("k2").value);
+    const L = parseFloat(document.getElementById("L").value);
+    const L1 = parseFloat(document.getElementById("L1").value);
+    const B = parseFloat(document.getElementById("B").value);
+    const T = parseFloat(document.getElementById("T").value);
+    const Ha = parseFloat(document.getElementById("Ha").value);
+    const dP = parseFloat(document.getElementById("dP").value);
+
+    // 濃度に応じた k3, k4, k5 の自動設定
+    let k3, k4, k5;
+
+    if (C >= 1 && C < 3) {
+        k3 = 16;
+        k4 = 2.9;
+        k5 = 2;
+    } else if (C >= 3 && C < 5) {
+        k3 = 13;
+        k4 = 2.5;
+        k5 = 2;
+    } else if (C >= 5 && C <= 9) {
+        k3 = 8;
+        k4 = 2.1;
+        k5 = 2;
+    } else {
+        alert("濃度 C は 1～9% の範囲で入力してください");
+        return;
+    }
+
+    // 単位変換
+    const Dm = D / 1000;
+
+    // 修正値
+    const C1 = Math.pow(C, 1.89);
+    const Q1 = Math.pow(Q, 0.364);
+    const D1 = Math.pow(Dm, 2.06);
+
+    // 相当長さ
+    const L_elbow = L1 * k3 * Dm;
+    const L_valve = B * k4;
+    const L_other = T * k5;
+
+    const L0 = L + L_elbow + L_valve + L_other;
+
+    // 配管抵抗（Excel と一致）
+    const Hf = 0.036 * Q1 * C1 * k1 * k2 / D1;
+    const Hf1 = L0 * Hf / 100;
+
+    // 全揚程
+    const H = Ha + dP + Hf1;
+
+    document.getElementById("result").innerHTML = `
+        <b>計算結果</b><br>
+        修正濃度 C1：${C1.toFixed(1)}<br>
+        修正流量 Q1：${Q1.toFixed(1)}<br>
+        全直管相当長さ L0：${L0.toFixed(1)} m<br><br>
+
+        <b>配管抵抗 Hf1：${Hf1.toFixed(2)} m</b><br>
+        <b>全揚程 H：${H.toFixed(2)} m</b><br><br>
+
+        <b>使用係数（濃度 ${C}%）</b><br>
+        k3（エルボ）：Dx${k3}<br>
+        k4（パルプ）：${k4}<br>
+        k5（その他）：${k5}
+    `;
+};
+</script>
+
+</body>
+</html>
